@@ -1,4 +1,6 @@
 import sqlite3
+import pandas as pd
+import matplotlib.pyplot as plt
 
 
     
@@ -18,8 +20,14 @@ class UI:
             if choice == '1':
                 # show user all papers
                 self.viewPapers(self.db.getAllPapers())
+            elif choice == '2':
+                # show reviewers with review counts in a given range
+                self.showReviewerInRange()
+            elif choice == '3':
+                # show number of sessions authors participated in
+                self.showBarPlot()
             # exit application
-            elif choice == '6':
+            elif choice == '7':
                 break
             else:
                 print("Invalid Selection")
@@ -30,12 +38,33 @@ class UI:
         
         options = ["1) See All Papers",
                    "2) Get Reviewers Within Range of Papers Reviewed",
-                   "3) Sessions Authors Participated In",
-                   "4) View Pie Chart of Top 5 Areas",
-                   "5) View Bar Chart of Average Scores",
-                   "6) Exit"]
+                   "3) Sessions Authors Participated In Bar Plot",
+                   "4) Sessions Authors Participated In Individual",
+                   "5) View Pie Chart of Top 5 Areas",
+                   "6) View Bar Chart of Average Scores",
+                   "7) Exit"]
         for option in options:
             print(option)
+    
+    
+    def showBarPlot(self):
+        data = self.db.getBarPlotStats()
+        plot = data.plot.bar(x="author")
+        plt.plot()
+        plt.show()
+    
+    
+    def showReviewerInRange(self):
+        # show all reviewers with review counts in a given range
+        low = input("Lower Bound: ")
+        high = input("Upper Bound ")
+        reviewers = self.db.getReviewersInRange(low,high)
+        print()
+        print("All reviewers within that range (inclusive)")
+        for email in reviewers:
+            print(email[0])
+        print()
+            
     
     def viewPapers(self,papers):
         # divide all papers into pages
@@ -173,7 +202,19 @@ class Database:
     def __del__(self):
         self.cursor.close()
         self.connection.close()
+
+
+
+    def getBarPlotStats(self):
+        # get the number of papers that 
         
+        string = '''SELECT p.author, COUNT(CASE WHEN p.decision = 'A' THEN 1 ELSE NULL END) as paperCount
+                    FROM papers p
+                    GROUP BY p.author;'''
+        data = pd.read_sql_query(string,self.connection)
+        return data
+
+
     def inputReview(self,scores,paper,reviewer):
         # add review to the database
         # scores is the list of scores for the review
@@ -181,7 +222,7 @@ class Database:
         # reviewer is the email address of the reviewer
         
         string = '''INSERT INTO reviews
-                    VALUES ({},'{}',{},{},{},{})'''.format(paper,reviewer,scores[0],
+                    VALUES ({},'{}',{},{},{},{});'''.format(paper,reviewer,scores[0],
                                                          scores[1],scores[2],scores[3])
         self.cursor.execute(string)
         self.connection.commit()
@@ -211,7 +252,7 @@ class Database:
                     EXCEPT
                     SELECT r.reviewer
                     FROM reviews r
-                    WHERE r.paper = {}'''.format(pID,pID) 
+                    WHERE r.paper = {};'''.format(pID,pID) 
         self.cursor.execute(string)
         emails = self.cursor.fetchall()
         return emails
@@ -220,9 +261,23 @@ class Database:
         # get all reviews
         # for testing purposes
         
-        self.cursor.execute("SELECT * FROM reviews")
+        self.cursor.execute("SELECT * FROM reviews;")
         reviews = self.cursor.fetchall()
         return reviews
+    
+    def getReviewersInRange(self,low,high):
+        # get all reviewers with review count in the given range (inclusive)
+        # low in the lower bound of the range
+        # high is the upper bound of the range
+        
+        string = '''SELECT e.reviewer, COUNT(CASE WHEN e.reviewer = r.reviewer
+                    THEN 1 ELSE NULL END) as caseCount
+                    FROM (SELECT DISTINCT reviewer FROM expertise) as e, reviews r 
+                    GROUP BY e.reviewer
+                    HAVING caseCount >= {} AND caseCount <= {};'''.format(low,high)
+        self.cursor.execute(string)
+        emails = self.cursor.fetchall()
+        return emails
     
         
         
@@ -231,4 +286,3 @@ class Database:
 if __name__ == "__main__":
     userUI = UI()
     userUI.run()
-    #userUI.viewPapers(db.getAllPapers())

@@ -9,7 +9,8 @@ class Tests:
         self.testGetAllPapers()
         self.testGetPaperReviewers()
         self.testPotentialReviewers()
-        self.testInsert()
+        # self.testInsert()
+        self.testGetRange()
     
     def testGetPaperReviewers(self):
         testPassed = True
@@ -81,6 +82,19 @@ class Tests:
             print("Insert passed")
         else:
             print("Insert failed")
+            
+    def testGetRange(self):
+        testPassed = True
+        expected1 = [("C3P0@Email",1,),("R2D2@Email",1,),("Tom@Email",1,)]
+        expected0 = [("Jerry@Email",0,)]
+        # case 1
+        testPassed = self.db.getReviewersInRange(1,1) == expected1
+        testPassed = self.db.getReviewersInRange(0,0) == expected0
+        
+        if testPassed == True:
+            print("Get range test passed")
+        else:
+            print("Get range test failed")
 
 
 if __name__ == "__main__":
