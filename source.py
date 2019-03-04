@@ -26,6 +26,9 @@ class UI:
             elif choice == '3':
                 # show number of sessions authors participated in
                 self.showBarPlot()
+            elif choice == '4':
+                # get user to choose an author to see paper count
+                self.showAuthors()
             # exit application
             elif choice == '7':
                 break
@@ -47,7 +50,40 @@ class UI:
             print(option)
     
     
+    
+    def showAuthors(self):
+        # show all authors to the user
+        
+        # get authors a show them to the user in a list
+        authors = self.db.getAuthors()
+        for i in range(len(authors)):
+            print(str(i+1)+") "+authors[i][0])
+        
+        # loop until the user has made a valid choice
+        while True:
+            choice = int(input("Choose an author: "))
+            if choice >= 1 and choice <= len(authors):
+                self.showAuthorPaperCount(authors[choice-1][0])
+                break
+            else:
+                print("Please make a valid selection")
+                print()
+    
+    def showAuthorPaperCount(self,author):
+    # show the number of accepted papers the author has
+    # author is the email of the author
+    
+        count = self.db.getAuthorPaperCount(author)
+        print()
+        print("Author {} has participated in {} sessions".format(author,count[0]))
+        print()
+        
+    
+    
     def showBarPlot(self):
+        # present the user with a bar plot of all the sessions all each author
+        # has participated in
+        
         data = self.db.getBarPlotStats()
         plot = data.plot.bar(x="author")
         plt.plot()
@@ -56,8 +92,17 @@ class UI:
     
     def showReviewerInRange(self):
         # show all reviewers with review counts in a given range
-        low = input("Lower Bound: ")
-        high = input("Upper Bound ")
+        
+        low = int(input("Lower Bound: "))
+        high = int(input("Upper Bound "))
+        
+        if low < 0:
+            low = 0
+            print("lower bound given invalid, lower bound set to 0")
+        if high < 0:
+            high = 0
+            print("upper bound given invalid, upper bound set to 0")
+        
         reviewers = self.db.getReviewersInRange(low,high)
         print()
         print("All reviewers within that range (inclusive)")
@@ -194,15 +239,34 @@ class UI:
 
 class Database:
     def __init__(self):
-        self.db_path = "./assign3test.db"
+        self.db_path = "assign3test.db"
         self.connection = sqlite3.connect(self.db_path)
-        # self.connection.row_factory = sqlite3.Row
         self.cursor = self.connection.cursor()
         
     def __del__(self):
         self.cursor.close()
         self.connection.close()
 
+    
+    def getAuthorPaperCount(self,author):
+        # gets the accepted paper count of an author
+        # author is the email address of the author
+        
+        string = '''SELECT COUNT(CASE WHEN p.decision = 'A' THEN 1 ELSE NULL END) as paperCount
+                    FROM papers p
+                    WHERE p.author = '{}'
+                    GROUP BY p.author'''.format(author)
+        self.cursor.execute(string)
+        count = self.cursor.fetchone()
+        return count
+
+    
+    def getAuthors(self):
+        string = '''SELECT DISTINCT p.author
+                    FROM papers p'''
+        self.cursor.execute(string)
+        authors = self.cursor.fetchall()
+        return authors
 
 
     def getBarPlotStats(self):
