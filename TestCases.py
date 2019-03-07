@@ -24,7 +24,7 @@ class Tests:
         # case 3
         testPassed = self.db.getPaperReviewers(3) == expected2
         # case 4
-        testPassed = self.db.getPaperReviewers(4) == expected2       
+        testPassed = self.db.getPaperReviewers(4) == expected2
         # case 5
         testPassed = self.db.getPaperReviewers(5) == expected3
     

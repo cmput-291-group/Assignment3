@@ -67,14 +67,17 @@ class UI:
         
         # loop until the user has made a valid choice
         while True:
-            choice = int(input("Choose an author: "))
-            if choice >= 1 and choice <= len(authors):
-                self.showAuthorPaperCount(authors[choice-1][0])
-                break
-            else:
-                print("Please make a valid selection")
-                print()
-    
+            try:
+                choice = int(input("Choose an author: "))
+                if choice < 1 or choice > len(authors):
+                    raise ValueError
+            except ValueError:
+                print("Input must an integer with the given range")
+                continue
+            break
+        
+        self.showAuthorPaperCount(authors[choice-1][0])
+            
     def showAuthorPaperCount(self,author):
     # show the number of accepted papers the author has
     # author is the email of the author
@@ -99,16 +102,19 @@ class UI:
     def showReviewerInRange(self):
         # show all reviewers with review counts in a given range
         
-        low = int(input("Lower Bound: "))
-        high = int(input("Upper Bound "))
-        
-        if low < 0:
-            low = 0
-            print("lower bound given invalid, lower bound set to 0")
-        if high < 0:
-            high = 0
-            print("upper bound given invalid, upper bound set to 0")
-        
+        while True:
+            try:
+                low = int(input("Lower Bound: "))
+                high = int(input("Upper Bound "))
+                
+                if low < 0 or high < 0:
+                    raise ValueError
+            except ValueError:
+                print("Input must be a positive integer")
+                continue
+                
+            break
+            
         reviewers = self.db.getReviewersInRange(low,high)
         print()
         print("All reviewers within that range (inclusive)")
@@ -126,8 +132,8 @@ class UI:
         pageIndex = 0
         # print the first page
         self.printPage(pages[pageIndex])
-        loop = True
-        while loop:
+        
+        while True:
             # get user input
             key = input("Please choose an action: ")
             print()
@@ -147,11 +153,16 @@ class UI:
                 else:
                     print("Already at the first page")
                 self.printPage(pages[pageIndex])
-                
+            try:
+                key = int(key)
+                if key < 1 or key > self.paperNum:
+                    raise ValueError
+            except ValueError:
+                print("Invalid input")
+                continue
+            break
             # if the user has choosen a paper, show them further options
-            elif int(key) >= 1 and int(key) <= self.paperNum:
-                loop = False
-                self.decideAllPapers(int(key))
+        self.decideAllPapers(int(key))
 
                 
     
@@ -165,11 +176,22 @@ class UI:
         for option in options:
             print(option)
         # get decision from user and continue accordingly
-        decision = int(input("Make a selection: "))
-        if decision == 1:
-            self.showReviewEmails(key)
-        elif decision == 2:
-            self.showPotentialReviewers(key)
+        loop = True
+        while loop:
+            try:
+                decision = int(input("Make a selection: "))
+            
+                if decision == 1:
+                    self.showReviewEmails(key)
+                    loop = False
+                elif decision == 2:
+                    self.showPotentialReviewers(key)
+                    loop = False
+                else:
+                    print("Input must be 1 or 2")
+            except ValueError:
+                print("Input must be an integer")                      
+        
         
     
     def showPotentialReviewers(self,key):
@@ -188,8 +210,17 @@ class UI:
             options.append(str(i+1)+") "+emails[i][0])
         for option in options:
             print(option)
-        # continue to add review page
-        choice = int(input("Select a reviewer"))
+        
+        while True:
+            # continue to add review page
+            try:
+                choice = int(input("Select a reviewer"))
+                if choice < 1 or choice > len(emails):
+                    raise ValueError
+            except ValueError:
+                print("Invalid input given")
+                continue
+            break
         self.addReview(key,emails[choice-1][0])
         
     def addReview(self,paper,reviewer):
