@@ -29,6 +29,12 @@ class UI:
             elif choice == '4':
                 # get user to choose an author to see paper count
                 self.showAuthors()
+            elif choice == '5':
+                # show pie chart for top 5 areas
+                self.showPieChart()
+            elif choice == '6':
+                # show reviewer bar chart
+                self.showReviewerBarChart()
             # exit application
             elif choice == '7':
                 break
@@ -201,10 +207,28 @@ class UI:
     
                 
     def showReviewEmails(self,key):
-        pass
+        # print the reviewers for the paper that matches the key
+        reviews = pd.read_sql_query("SELECT paper, reviewer FROM reviews", self.db.connection)
+        print(reviews[reviews.paper == key].reviewer.to_string(index=False))
     
-    
-         
+    def showPieChart(self):
+        # create and display a pie chart for the top 5 areas
+        areas = pd.read_sql_query("SELECT area as Area, COUNT(*) as Count FROM papers GROUP BY Area", self.db.connection)
+        # get the 5th largest and keep ties
+        areas.nlargest(5, "Count", keep="all")
+        plot=areas.plot.pie(labels=areas.Area, y="Count")
+        plt.plot()
+        plt.show()
+
+    def showReviewerBarChart(self):
+        reviews = pd.read_sql_query(
+            '''SELECT reviewer, AVG(originality) as Originality, AVG(importance) as Importance, AVG(soundness) as Soundness, AVG(overall) as Overall 
+            FROM reviews 
+            GROUP BY reviewer''', self.db.connection)
+        reviews.plot.bar(x='reviewer')
+        plt.plot()
+        plt.show()
+
     def printPage(self,page):
         # print requested page
         # page is a dict of papers
@@ -342,11 +366,7 @@ class Database:
         self.cursor.execute(string)
         emails = self.cursor.fetchall()
         return emails
-    
-        
-        
-        
-    
+
 if __name__ == "__main__":
     userUI = UI()
     userUI.run()
