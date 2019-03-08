@@ -15,8 +15,10 @@ class UI:
         while True:
             # present main screen
             self.mainScreen()
+            print()
             # choose an activity option
             choice = input("Make a selection: ")
+            print()
             if choice == '1':
                 # show user all papers
                 self.viewPapers(self.db.getAllPapers())
@@ -68,6 +70,7 @@ class UI:
         # loop until the user has made a valid choice
         while True:
             try:
+                print()
                 choice = int(input("Choose an author: "))
                 if choice < 1 or choice > len(authors):
                     raise ValueError
@@ -90,7 +93,7 @@ class UI:
     
     
     def showBarPlot(self):
-        # present the user with a bar plot of all the sessions all each author
+        # present the user with a bar plot of all the sessions each author
         # has participated in
         
         data = self.db.getBarPlotStats()
@@ -134,8 +137,9 @@ class UI:
         self.printPage(pages[pageIndex])
         
         while True:
+            print()
             # get user input
-            key = input("Please choose an action: ")
+            key = input("Please make a selection: ")
             print()
             # present the next page of papers
             if key == 'n':
@@ -179,8 +183,9 @@ class UI:
         loop = True
         while loop:
             try:
+                print()
                 decision = int(input("Make a selection: "))
-            
+                
                 if decision == 1:
                     self.showReviewEmails(key)
                     loop = False
@@ -239,23 +244,31 @@ class UI:
                 
     def showReviewEmails(self,key):
         # print the reviewers for the paper that matches the key
-        reviews = pd.read_sql_query("SELECT paper, reviewer FROM reviews", self.db.connection)
-        print(reviews[reviews.paper == key].reviewer.to_string(index=False))
+        # key is the paper id
+        
+        reviews = self.db.getReviewEmails()
+        # slim down list to reviews for the given paper
+        reviews = reviews[reviews.paper == key]
+        print()
+        if reviews.empty:
+            # no reviews for this paper exist
+            print("No reviewers have reviewed this paper")
+        else:
+            print(reviews.reviewer.to_string(index=False))
+        print()
     
     def showPieChart(self):
-        # create and display a pie chart for the top 5 areas
-        areas = pd.read_sql_query("SELECT area as Area, COUNT(*) as Count FROM papers GROUP BY Area", self.db.connection)
-        # get the 5th largest and keep ties
-        areas.nlargest(5, "Count", keep="all")
+        # show a pie chart of the most popular areas
+        
+        areas = self.db.getPieAreas()
         plot=areas.plot.pie(labels=areas.Area, y="Count")
         plt.plot()
         plt.show()
 
     def showReviewerBarChart(self):
-        reviews = pd.read_sql_query(
-            '''SELECT reviewer, AVG(originality) as Originality, AVG(importance) as Importance, AVG(soundness) as Soundness, AVG(overall) as Overall 
-            FROM reviews 
-            GROUP BY reviewer''', self.db.connection)
+        # show a bar chart of each reviewers average scores
+        
+        reviews = self.db.getReviewerBarChart()
         reviews.plot.bar(x='reviewer')
         plt.plot()
         plt.show()
@@ -274,6 +287,7 @@ class UI:
         # split all papers into pages of 5
         # papers is a list of papers
         
+        # calculate how many pages will be needed
         self.paperNum = len(papers)
         if self.paperNum % 5 == 0:
             pageCount = self.paperNum/5
@@ -281,8 +295,11 @@ class UI:
             pageCount = (self.paperNum//5) + 1
         pageIndex = 0
         pages = []
+        
+        # create pages
         for i in range(pageCount):
             page = {}
+            # Add 5 papers to the page, or break upon running out of papers
             for i in range(5):
                 if pageIndex == self.paperNum:
                     break
@@ -301,6 +318,31 @@ class Database:
     def __del__(self):
         self.cursor.close()
         self.connection.close()
+    
+    def getReviewerBarChart(self):
+        # get average marks for all reviewers
+        
+        reviews = pd.read_sql_query(
+            '''SELECT reviewer, AVG(originality) as Originality, AVG(importance) as Importance, AVG(soundness) as Soundness, AVG(overall) as Overall 
+            FROM reviews 
+            GROUP BY reviewer''', self.connection)
+        return reviews
+        
+        
+        
+    def getPieAreas(self):
+        # get number of papers in each area
+        
+        areas = pd.read_sql_query("SELECT area as Area, COUNT(*) as Count FROM papers GROUP BY Area", self.connection)
+        # get the 5th largest and keep ties
+        areas.nlargest(5, "Count", keep="all")
+        return areas
+    
+    def getReviewEmails(self):
+        # get reviewer emails
+        
+        reviews = pd.read_sql_query("SELECT paper, reviewer FROM reviews", self.connection)
+        return reviews
 
     
     def getAuthorPaperCount(self,author):
@@ -317,6 +359,8 @@ class Database:
 
     
     def getAuthors(self):
+        # get all distinct authors
+        
         string = '''SELECT DISTINCT p.author
                     FROM papers p'''
         self.cursor.execute(string)
@@ -325,7 +369,7 @@ class Database:
 
 
     def getBarPlotStats(self):
-        # get the number of papers that 
+        # get the number of papers that have been accepted for each author
         
         string = '''SELECT p.author, COUNT(CASE WHEN p.decision = 'A' THEN 1 ELSE NULL END) as paperCount
                     FROM papers p
@@ -353,13 +397,7 @@ class Database:
         papers = self.cursor.fetchall()
         return papers
     
-    def getPaperReviewers(self,pID):
-        # get reviewers for a certain paper
-        # pID is the paper id
-        
-        self.cursor.execute("SELECT reviewer FROM reviews WHERE paper=:id;",{"id":pID})
-        emails = self.cursor.fetchall() 
-        return emails
+    
     
     def getPotentialReviewers(self,pID):
         # get all potential reviewers for a certain paper
