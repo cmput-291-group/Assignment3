@@ -8,9 +8,12 @@ import matplotlib.pyplot as plt
 class UI:
     def __init__(self):
         self.paperNum = 0
-        self.db = Database()
+        path = input("Enter database name: ")
+        print()
+        self.db = Database(path)
         
     def run(self):
+        
         # main loop
         while True:
             # present main screen
@@ -310,8 +313,8 @@ class UI:
 
 
 class Database:
-    def __init__(self):
-        self.db_path = "assign3test.db"
+    def __init__(self,path):
+        self.db_path = path
         self.connection = sqlite3.connect(self.db_path)
         self.cursor = self.connection.cursor()
         
