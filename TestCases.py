@@ -24,7 +24,7 @@ class Tests:
         # case 3
         testPassed = self.db.getPaperReviewers(3) == expected2
         # case 4
-        testPassed = self.db.getPaperReviewers(4) == expected2       
+        testPassed = self.db.getPaperReviewers(4) == expected2
         # case 5
         testPassed = self.db.getPaperReviewers(5) == expected3
     
@@ -95,7 +95,8 @@ class Tests:
             print("Get range test passed")
         else:
             print("Get range test failed")
-
+    
+    
 
 if __name__ == "__main__":
     tests = Tests()
