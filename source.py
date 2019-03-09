@@ -3,8 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-    
-
 class UI:
     def __init__(self):
         self.paperNum = 0
@@ -45,8 +43,7 @@ class UI:
                 break
             else:
                 print("Invalid Selection")
-            
-    
+
     def mainScreen(self):
         # Present all main options to the user
         
@@ -59,9 +56,7 @@ class UI:
                    "7) Exit"]
         for option in options:
             print(option)
-    
-    
-    
+
     def showAuthors(self):
         # show all authors to the user
         
@@ -85,16 +80,14 @@ class UI:
         self.showAuthorPaperCount(authors[choice-1][0])
             
     def showAuthorPaperCount(self,author):
-    # show the number of accepted papers the author has
-    # author is the email of the author
+        # show the number of accepted papers the author has
+        # author is the email of the author
     
         count = self.db.getAuthorPaperCount(author)
         print()
         print("Author {} has participated in {} sessions".format(author,count[0]))
         print()
-        
-    
-    
+
     def showBarPlot(self):
         # present the user with a bar plot of all the sessions each author
         # has participated in
@@ -103,8 +96,7 @@ class UI:
         plot = data.plot.bar(x="author")
         plt.plot()
         plt.show()
-    
-    
+
     def showReviewerInRange(self):
         # show all reviewers with review counts in a given range
         
@@ -127,8 +119,7 @@ class UI:
         for email in reviewers:
             print(email[0])
         print()
-            
-    
+
     def viewPapers(self,papers):
         # divide all papers into pages
         # papers is a list of dictionaries
@@ -171,9 +162,6 @@ class UI:
             # if the user has choosen a paper, show them further options
         self.decideAllPapers(int(key))
 
-                
-    
-    
     def decideAllPapers(self,key):
         # print options for the selected paper
         # key is the paper id
@@ -199,9 +187,8 @@ class UI:
                     print("Input must be 1 or 2")
             except ValueError:
                 print("Input must be an integer")                      
-        
-        
-    
+
+                
     def showPotentialReviewers(self,key):
         # get all potential reviewers
         # key is the paper id
@@ -243,8 +230,7 @@ class UI:
         scores.append(int(input("Overall: ")))
         # input the score into the database
         self.db.inputReview(scores,paper,reviewer)
-    
-                
+
     def showReviewEmails(self,key):
         # print the reviewers for the paper that matches the key
         # key is the paper id
@@ -313,7 +299,7 @@ class UI:
 
 
 class Database:
-    def __init__(self,path):
+    def __init__(self, path):
         self.db_path = path
         self.connection = sqlite3.connect(self.db_path)
         self.cursor = self.connection.cursor()
@@ -330,15 +316,27 @@ class Database:
             FROM reviews 
             GROUP BY reviewer''', self.connection)
         return reviews
-        
-        
-        
+
     def getPieAreas(self):
         # get number of papers in each area
-        
-        areas = pd.read_sql_query("SELECT area as Area, COUNT(*) as Count FROM papers GROUP BY Area", self.connection)
         # get the 5th largest and keep ties
-        areas.nlargest(5, "Count", keep="all")
+        areas = pd.read_sql_query('''
+        SELECT area as Area, COUNT(*) as Count 
+        FROM papers
+        GROUP BY Area
+        HAVING Count >= 
+        (
+        SELECT COUNT(*)
+        FROM papers
+        GROUP BY Area
+        ORDER BY COUNT(*) DESC
+        LIMIT 1 OFFSET 4
+        ) 
+        OR (
+        SELECT COUNT(DISTINCT area)
+        FROM papers
+)       <= 5''', self.connection)
+
         return areas
     
     def getReviewEmails(self):
@@ -347,7 +345,6 @@ class Database:
         reviews = pd.read_sql_query("SELECT paper, reviewer FROM reviews", self.connection)
         return reviews
 
-    
     def getAuthorPaperCount(self,author):
         # gets the accepted paper count of an author
         # author is the email address of the author
@@ -360,7 +357,6 @@ class Database:
         count = self.cursor.fetchone()
         return count
 
-    
     def getAuthors(self):
         # get all distinct authors
         
@@ -370,7 +366,6 @@ class Database:
         authors = self.cursor.fetchall()
         return authors
 
-
     def getBarPlotStats(self):
         # get the number of papers that have been accepted for each author
         
@@ -379,7 +374,6 @@ class Database:
                     GROUP BY p.author;'''
         data = pd.read_sql_query(string,self.connection)
         return data
-
 
     def inputReview(self,scores,paper,reviewer):
         # add review to the database
@@ -399,9 +393,7 @@ class Database:
         self.cursor.execute("SELECT * FROM papers;")
         papers = self.cursor.fetchall()
         return papers
-    
-    
-    
+
     def getPotentialReviewers(self,pID):
         # get all potential reviewers for a certain paper
         # pID is the paper id
