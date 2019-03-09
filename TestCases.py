@@ -3,36 +3,15 @@ from source import Database
 
 class Tests:
     def __init__(self):
-        self.db = Database()
+        self.db = Database("assign3test.db")
     
     def run(self):
         self.testGetAllPapers()
-        self.testGetPaperReviewers()
         self.testPotentialReviewers()
         # self.testInsert()
         self.testGetRange()
     
-    def testGetPaperReviewers(self):
-        testPassed = True
-        expected1 = [('Minnie@Email',), ('Donald@Email',), ('Mickey@Email',)]
-        expected2 = [("Anakin@Email",),("Darth@Email",),("Pluto@Email",)]
-        expected3 = [("C3P0@Email",),("R2D2@Email",),("Tom@Email",)]
-        # case 1
-        testPassed = self.db.getPaperReviewers(1) == expected1
-        # case 2
-        testPassed = self.db.getPaperReviewers(2) == expected1
-        # case 3
-        testPassed = self.db.getPaperReviewers(3) == expected2
-        # case 4
-        testPassed = self.db.getPaperReviewers(4) == expected2
-        # case 5
-        testPassed = self.db.getPaperReviewers(5) == expected3
-    
-        if testPassed == True:
-            print("Getting paper reviewers has passed")
-        else:
-            print("Getting paper reviewers has failed")
-    
+
     def testGetAllPapers(self):
         expected = [(1, 'Bass players are undervalued big time', 'A', 'DB', 'Harry@Email', 'DB'), (2, 'System of a Down rocks!', 'A', 'SE', 'Harry@Email', 'SE'), (3, 'Three moons are better than one', 'A', 'SE', 'Ron@Email', 'SE'), (4, 'Donald was not always been a duck', 'R', 'SE', 'Hermoine@Email', 'SE'), (5, 'Mickey and Anakin are bothers', 'R', 'SE', 'Snape@Email', 'SE'), (6, 'Previous text here caused an error', 'A', 'DB', 'Harry@Email', 'DB')]
         
